@@ -108,12 +108,7 @@ abstract class Type extends DoctrineType
      */
     protected static function extractPlatformTypeMapping(DoctrineAbstractPlatform $platform): array
     {
-        // Try the public method first (if available)
-        if (method_exists($platform, 'getDoctrineTypeMapping')) {
-            return $platform->getDoctrineTypeMapping();
-        }
-
-        // Try reflection for older DBAL versions
+        // Try reflection to access the internal type mapping
         try {
             $reflection = new \ReflectionClass($platform);
 
@@ -146,39 +141,82 @@ abstract class Type extends DoctrineType
     protected static function getDefaultTypeMapping(): array
     {
         return [
+            // Common types
             'bigint' => 'bigint',
             'binary' => 'binary',
             'blob' => 'blob',
             'boolean' => 'boolean',
+            'bool' => 'boolean',
             'char' => 'string',
             'date' => 'date',
             'datetime' => 'datetime',
             'decimal' => 'decimal',
             'double' => 'float',
+            'double precision' => 'float',
             'enum' => 'string',
             'float' => 'float',
+            'float4' => 'float',
+            'float8' => 'float',
             'int' => 'integer',
+            'int2' => 'smallint',
+            'int4' => 'integer',
+            'int8' => 'bigint',
             'integer' => 'integer',
             'json' => 'json',
+            'jsonb' => 'json',
             'longblob' => 'blob',
             'longtext' => 'text',
             'mediumblob' => 'blob',
             'mediumint' => 'integer',
             'mediumtext' => 'text',
+            'money' => 'decimal',
             'numeric' => 'decimal',
             'real' => 'float',
+            'serial' => 'integer',
+            'serial4' => 'integer',
+            'serial8' => 'bigint',
             'set' => 'simple_array',
             'smallint' => 'smallint',
+            'smallserial' => 'smallint',
             'string' => 'string',
             'text' => 'text',
             'time' => 'time',
+            'timetz' => 'time',
             'timestamp' => 'datetime',
+            'timestamptz' => 'datetimetz',
             'tinyblob' => 'blob',
             'tinyint' => 'boolean',
             'tinytext' => 'text',
+            'uuid' => 'guid',
             'varbinary' => 'binary',
             'varchar' => 'string',
+            'character varying' => 'string',
+            'character' => 'string',
             'year' => 'date',
+            // PostgreSQL specific
+            'bytea' => 'blob',
+            'cidr' => 'string',
+            'inet' => 'string',
+            'interval' => 'string',
+            'macaddr' => 'string',
+            'bit' => 'string',
+            'bit varying' => 'string',
+            'varbit' => 'string',
+            'point' => 'string',
+            'line' => 'string',
+            'lseg' => 'string',
+            'box' => 'string',
+            'path' => 'string',
+            'polygon' => 'string',
+            'circle' => 'string',
+            'tsquery' => 'string',
+            'tsvector' => 'string',
+            'txid_snapshot' => 'string',
+            'xml' => 'text',
+            '_int4' => 'simple_array',
+            '_int8' => 'simple_array',
+            '_text' => 'simple_array',
+            '_varchar' => 'simple_array',
         ];
     }
 
