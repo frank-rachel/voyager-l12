@@ -190,9 +190,30 @@ class VoyagerDatabaseController extends Controller
         $db->oldTable = $oldTable ? $oldTable : json_encode(null);
         $db->action = $action;
         $db->identifierRegex = Identifier::REGEX;
-        $db->platform = SchemaManager::getDatabasePlatform()->getName();
+        $db->platform = $this->getPlatformName(SchemaManager::getDatabasePlatform());
 
         return $db;
+    }
+
+    /**
+     * Get platform name, handling DBAL 4.x compatibility.
+     *
+     * @param \Doctrine\DBAL\Platforms\AbstractPlatform $platform
+     * @return string
+     */
+    protected function getPlatformName($platform): string
+    {
+        if (method_exists($platform, 'getName')) {
+            return $platform->getName();
+        }
+
+        // Extract from class name for DBAL 4.x (e.g., PostgreSQL120Platform -> postgresql)
+        $className = get_class($platform);
+        $parts = explode('\\', $className);
+        $platformClass = end($parts);
+        $platformName = str_replace('Platform', '', $platformClass);
+        $platformName = preg_replace('/\d+$/', '', $platformName);
+        return strtolower($platformName);
     }
 
     public function cleanOldAndCreateNew($originalName, $tableName)
