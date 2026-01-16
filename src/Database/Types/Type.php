@@ -54,6 +54,10 @@ abstract class Type extends DoctrineType
 
         // Convert class name to platform name (e.g., MySQLPlatform -> mysql)
         $platformName = str_replace('Platform', '', $platformClass);
+
+        // Remove version numbers (e.g., PostgreSQL120 -> PostgreSQL, MySQL80 -> MySQL)
+        $platformName = preg_replace('/\d+$/', '', $platformName);
+
         return strtolower($platformName);
     }
 
