@@ -38,11 +38,24 @@ php artisan voyager:install --with-dummy
 - Updated `laravel/ui` requirement to `^4.0`
 
 ### Doctrine DBAL 4.0 Compatibility
-- Refactored `SchemaManager` to handle DBAL 4.0 API changes
-- Added compatibility layer for `getDatabasePlatform()` method changes
-- Fixed `listTableNames()` deprecation
-- Added fallback type mapping for cross-version compatibility
-- Improved platform name detection for DBAL 4.0
+
+The following changes were made to support DBAL 4.0, which has significant breaking changes from DBAL 3.x:
+
+#### SchemaManager (`src/Database/Schema/SchemaManager.php`)
+- **Connection handling**: DBAL 4.0 no longer accepts PDO connections directly. `getDatabaseConnection()` now builds connection parameters from Laravel's database config and passes them to `DriverManager::getConnection()`
+- **Platform detection**: Added `getPlatformName()` helper since `Platform::getName()` was removed in DBAL 4.0
+
+#### Type System (`src/Database/Types/Type.php`)
+- **Type name resolution**: Added `getTypeName()` helper that uses the TypeRegistry or extracts from class name, since `Type::getName()` was removed
+- **Platform name resolution**: Added `getPlatformName()` helper with version number stripping (e.g., `Postgresql120Platform` → `postgresql`)
+- **Type mapping extraction**: `extractPlatformTypeMapping()` now uses reflection to access internal mapping, with comprehensive fallback defaults for MySQL and PostgreSQL types
+- **PHP 8.2+ compatibility**: Replaced dynamic `$customOptions` property with static `$typeOptionsMap` to avoid deprecation warnings
+
+#### Type Classes (`src/Database/Types/Common/*.php`, `src/Database/Types/Postgresql/*.php`)
+- Added `: string` return type to `getSQLDeclaration()` methods for DBAL 4.0 interface compliance
+
+#### Database Controller (`src/Http/Controllers/VoyagerDatabaseController.php`)
+- Added `getPlatformName()` helper for DBAL 4.0 compatibility in the database management UI
 
 ### Code Improvements
 - Replaced deprecated `Auth::guest()` with `Auth::check()`
