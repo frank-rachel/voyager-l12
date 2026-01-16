@@ -1,127 +1,88 @@
+# Voyager - Laravel 12 Compatible Fork
+
 <p align="center"><a href="https://voyager.devdojo.com" target="_blank"><img width="400" src="https://s3.amazonaws.com/thecontrolgroup/voyager.png"></a></p>
 
-> [!Warning]
-> We have decided to archive Voyager as there are many more modern options available. You may still use Voyager, but it will not be receiving any more updates. Here are some alternatives that we recommend:
+This is a **Laravel 12 compatible fork** of the original [Voyager Admin Panel](https://github.com/thedevdojo/voyager).
 
-- [Wave SaaS Starter Kit](https://devdojo.com/wave)
-- [FilamentPHP Admin Panel & More](https://filamentphp.com)
-- [Genesis Starter Kit](https://github.com/thedevdojo/genesis)
+## About This Fork
 
-Of course, you may also wish to reach for Laravels admin panel [Nova](https://nova.laravel.com/), or you may want to reach for one of their many [Starter Kits](https://laravel.com/docs/starter-kits).
+The original Voyager package was archived and did not support Laravel 11+. This fork adds compatibility for:
 
-Thanks for all the wonderful times 🕺
+- **Laravel 10.x, 11.x, and 12.x**
+- **PHP 8.2, 8.3, and 8.4**
+- **Doctrine DBAL 3.5+ and 4.0**
 
-> Voyager is built with Vue and Bootstrap. If you are looking for a Laravel Starter Kit built that uses Livewire and Tailwind, you may be interested in checking out [Genesis](https://github.com/thedevdojo/genesis)
-
-<p align="center"><a href="https://github.com/thedevdojo/genesis" target="_blank"><img src="https://github.com/thedevdojo/voyager/assets/601261/6ffa6ac4-ea1e-4c8a-8360-b347377b8201" height="auto" width="100%"></a></p>
-
-<p align="center">
-<a href="https://packagist.org/packages/tcg/voyager"><img src="https://poser.pugx.org/tcg/voyager/downloads.svg?format=flat" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/tcg/voyager"><img src="https://poser.pugx.org/tcg/voyager/v/stable.svg?format=flat" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/tcg/voyager"><img src="https://poser.pugx.org/tcg/voyager/license.svg?format=flat" alt="License"></a>
-<a href="https://github.com/larapack/awesome-voyager"><img src="https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg" alt="Awesome Voyager"></a>
-</p>
-
-# **V**oyager - The Missing Laravel Admin
-Made with ❤️ by [The Control Group](https://www.thecontrolgroup.com)
-
-![Voyager Screenshot](https://s3.amazonaws.com/thecontrolgroup/voyager-screenshot.png)
-
-Website & Documentation: https://voyager.devdojo.com/
-
-Video Tutorial Here: https://voyager.devdojo.com/academy/
-
-Join our Slack chat: https://voyager-slack-invitation.herokuapp.com/
-
-View the Voyager Cheat Sheet: https://voyager-cheatsheet.ulties.com/
-
-<hr>
-
-Laravel Admin & BREAD System (Browse, Read, Edit, Add, & Delete), supporting Laravel 8 and newer!
-
-> Want to use Laravel 6 or 7? Use [Voyager 1.5](https://github.com/the-control-group/voyager/tree/1.5)
-
-## Installation Steps
-
-### 1. Require the Package
-
-After creating your new Laravel application you can include the Voyager package with the following command:
+## Installation
 
 ```bash
-composer require tcg/voyager
+composer require frank-rachel/voyager-l12
 ```
 
-> If you are installing this on Laravel 10, we are working on getting a permanent release available; however, you can still use this with Larvel 10 by requiring the following:
-
-```bash
-composer require tcg/voyager dev-1.6-l10
-```
-
-### 2. Add the DB Credentials & APP_URL
-
-Next make sure to create a new database and add your database credentials to your .env file:
-
-```
-DB_HOST=localhost
-DB_DATABASE=homestead
-DB_USERNAME=homestead
-DB_PASSWORD=secret
-```
-
-You will also want to update your website URL inside of the `APP_URL` variable inside the .env file:
-
-```
-APP_URL=http://localhost:8000
-```
-
-### 3. Run The Installer
-
-Lastly, we can install voyager. You can do this either with or without dummy data.
-The dummy data will include 1 admin account (if no users already exists), 1 demo page, 4 demo posts, 2 categories and 7 settings.
-
-To install Voyager without dummy simply run
+Then run:
 
 ```bash
 php artisan voyager:install
 ```
 
-If you prefer installing it with dummy run
+Or with dummy data:
 
 ```bash
 php artisan voyager:install --with-dummy
 ```
 
-And we're all good to go!
+## Changes from Original
 
-Start up a local development server with `php artisan serve` And, visit [http://localhost:8000/admin](http://localhost:8000/admin).
+### Laravel 12 Compatibility
+- Updated `illuminate/support` constraint to support `~12.0`
+- Updated all dev dependencies for Laravel 12 compatibility
+- Updated `laravel/ui` requirement to `^4.0`
+
+### Doctrine DBAL 4.0 Compatibility
+- Refactored `SchemaManager` to handle DBAL 4.0 API changes
+- Added compatibility layer for `getDatabasePlatform()` method changes
+- Fixed `listTableNames()` deprecation
+- Added fallback type mapping for cross-version compatibility
+- Improved platform name detection for DBAL 4.0
+
+### Code Improvements
+- Replaced deprecated `Auth::guest()` with `Auth::check()`
+- Updated `VoyagerUser` trait to use `loadMissing()` for eager loading
+- Removed support for PHP < 8.2 and Laravel < 10
+
+### Minimum Requirements
+- PHP 8.2+
+- Laravel 10.0+
 
 ## Creating an Admin User
-
-If you did go ahead with the dummy data, a user should have been created for you with the following login credentials:
-
->**email:** `admin@admin.com`   
->**password:** `password`
-
-NOTE: Please note that a dummy user is **only** created if there are no current users in your database.
-
-If you did not go with the dummy user, you may wish to assign admin privileges to an existing user.
-This can easily be done by running this command:
-
-```bash
-php artisan voyager:admin your@email.com
-```
-
-If you did not install the dummy data and you wish to create a new admin user, you can pass the `--create` flag, like so:
 
 ```bash
 php artisan voyager:admin your@email.com --create
 ```
 
-And you will be prompted for the user's name and password.
+## Original Documentation
 
-## Sponsors
+For original documentation, visit [Voyager Documentation](https://voyager-docs.devdojo.com/).
 
-Voyager is proudly supported by our amazing sponsors. A big thank you to:
+Video Tutorial: https://voyager.devdojo.com/academy/
 
-[![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%203.svg)](https://www.digitalocean.com/?refcode=dc19b9819d06&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
+## Features
 
+Voyager is a Laravel Admin & BREAD System (Browse, Read, Edit, Add, & Delete):
+
+- **Media Manager** - Upload, organize and share media files
+- **Menu Builder** - Easily build menus with drag-and-drop interface
+- **Database Manager** - View and modify your database schema
+- **BREAD Builder** - Build CRUD interfaces for any database table
+- **Settings** - Key/value settings management
+- **And much more...**
+
+![Voyager Screenshot](https://s3.amazonaws.com/thecontrolgroup/voyager-screenshot.png)
+
+## License
+
+MIT License - see the original [Voyager](https://github.com/thedevdojo/voyager) repository for full license details.
+
+## Credits
+
+- Original package by [The Control Group](https://www.thecontrolgroup.com) and [DevDojo](https://github.com/thedevdojo)
+- Laravel 12 compatibility by [Frank Rachel](https://github.com/frank-rachel)

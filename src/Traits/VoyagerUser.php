@@ -104,13 +104,7 @@ trait VoyagerUser
 
     private function loadRolesRelations()
     {
-        if (!$this->relationLoaded('role')) {
-            $this->load('role');
-        }
-
-        if (!$this->relationLoaded('roles')) {
-            $this->load('roles');
-        }
+        $this->loadMissing(['role', 'roles']);
     }
 
     private function loadPermissionsRelations()

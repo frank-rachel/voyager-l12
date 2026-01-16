@@ -19,7 +19,7 @@ class VoyagerAdminMiddleware
     {
         auth()->setDefaultDriver(app('VoyagerGuard'));
 
-        if (!Auth::guest()) {
+        if (Auth::check()) {
             $user = Auth::user();
             app()->setLocale($user->locale ?? app()->getLocale());
 
