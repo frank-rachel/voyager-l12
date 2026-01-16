@@ -15,6 +15,7 @@ abstract class Type extends DoctrineType
     protected static $platformTypes = [];
     protected static $customTypeOptions = [];
     protected static $typeCategories = [];
+    protected static $typeOptionsMap = [];  // Store options by type name for PHP 8.2+ compatibility
 
     public const NAME = 'UNDEFINED_TYPE_NAME';
     public const NOT_SUPPORTED = 'notSupported';
@@ -27,11 +28,46 @@ abstract class Type extends DoctrineType
 
     public static function toArray(DoctrineType $type)
     {
-        $customTypeOptions = $type->customOptions ?? [];
+        $typeName = static::getTypeName($type);
+        // Get custom options from static map (PHP 8.2+ compatible) or fall back to property
+        $customTypeOptions = static::$typeOptionsMap[$typeName] ?? ($type->customOptions ?? []);
 
         return array_merge([
-            'name' => $type->getName(),
+            'name' => $typeName,
         ], $customTypeOptions);
+    }
+
+    /**
+     * Get the name of a Doctrine type, handling DBAL 4.x compatibility.
+     *
+     * @param DoctrineType $type
+     * @return string
+     */
+    protected static function getTypeName(DoctrineType $type): string
+    {
+        // Our custom types have getName()
+        if (method_exists($type, 'getName')) {
+            return $type->getName();
+        }
+
+        // For DBAL 4.x built-in types, use the TypeRegistry to find the name
+        try {
+            $registry = DoctrineType::getTypeRegistry();
+            foreach ($registry->getMap() as $name => $className) {
+                if ($type instanceof $className || get_class($type) === $className) {
+                    return $name;
+                }
+            }
+        } catch (\Exception $e) {
+            // Fallback to extracting from class name
+        }
+
+        // Extract from class name as last resort (e.g., BinaryType -> binary)
+        $className = get_class($type);
+        $parts = explode('\\', $className);
+        $typeName = end($parts);
+        $typeName = str_replace('Type', '', $typeName);
+        return strtolower($typeName);
     }
 
     /**
@@ -259,11 +295,14 @@ abstract class Type extends DoctrineType
 
         Platform::registerPlatformCustomTypeOptions($platformName);
 
-        // Add the custom options to the types
+        // Add the custom options to the types using static map (PHP 8.2+ compatible)
         foreach (static::$customTypeOptions as $option) {
             foreach ($option['types'] as $type) {
                 if (static::hasType($type)) {
-                    static::getType($type)->customOptions[$option['name']] = $option['value'];
+                    if (!isset(static::$typeOptionsMap[$type])) {
+                        static::$typeOptionsMap[$type] = [];
+                    }
+                    static::$typeOptionsMap[$type][$option['name']] = $option['value'];
                 }
             }
         }
