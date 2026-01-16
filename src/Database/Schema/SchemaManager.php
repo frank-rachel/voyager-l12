@@ -60,28 +60,29 @@ abstract class SchemaManager
             return $connection->getDoctrineConnection();
         }
 
-        // For newer Laravel versions
-        if (method_exists($connection, 'getPdo')) {
-            // Build Doctrine connection from PDO
-            $pdo = $connection->getPdo();
-            $driver = $connection->getDriverName();
+        // For Laravel 11+ / DBAL 4.x - build connection from config
+        // DBAL 4.x no longer supports wrapping existing PDO connections,
+        // so we need to pass the connection parameters directly
+        $config = $connection->getConfig();
+        $driver = $connection->getDriverName();
 
-            $driverMap = [
-                'mysql' => 'pdo_mysql',
-                'pgsql' => 'pdo_pgsql',
-                'sqlite' => 'pdo_sqlite',
-                'sqlsrv' => 'pdo_sqlsrv',
-            ];
+        $driverMap = [
+            'mysql' => 'pdo_mysql',
+            'pgsql' => 'pdo_pgsql',
+            'sqlite' => 'pdo_sqlite',
+            'sqlsrv' => 'pdo_sqlsrv',
+        ];
 
-            $params = [
-                'pdo' => $pdo,
-                'driver' => $driverMap[$driver] ?? 'pdo_mysql',
-            ];
+        $params = [
+            'driver' => $driverMap[$driver] ?? 'pdo_mysql',
+            'host' => $config['host'] ?? '127.0.0.1',
+            'port' => $config['port'] ?? ($driver === 'pgsql' ? 5432 : 3306),
+            'dbname' => $config['database'] ?? '',
+            'user' => $config['username'] ?? '',
+            'password' => $config['password'] ?? '',
+        ];
 
-            return \Doctrine\DBAL\DriverManager::getConnection($params);
-        }
-
-        throw new \RuntimeException('Unable to get Doctrine database connection');
+        return \Doctrine\DBAL\DriverManager::getConnection($params);
     }
 
     /**
