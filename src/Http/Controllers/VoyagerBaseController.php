@@ -1091,10 +1091,30 @@ class VoyagerBaseController extends Controller
                 $query->where(function ($q) use ($dataType, $searchValueLower) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
-                        // Skip relationship fields for now (complex search)
-                        if ($row->type === 'relationship') {
+                        // Handle relationship fields by searching the related table
+                        if ($row->type === 'relationship' && isset($row->details->model) && isset($row->details->label)) {
+                            try {
+                                $relatedModel = app($row->details->model);
+                                $relatedIds = $relatedModel::whereRaw('LOWER('.$row->details->label.') LIKE ?', ['%'.$searchValueLower.'%'])
+                                    ->pluck($row->details->key ?? 'id')
+                                    ->toArray();
+
+                                if (!empty($relatedIds)) {
+                                    $foreignKey = $dataType->name.'.'.$row->field;
+                                    if ($first) {
+                                        $q->whereIn($foreignKey, $relatedIds);
+                                        $first = false;
+                                    } else {
+                                        $q->orWhereIn($foreignKey, $relatedIds);
+                                    }
+                                }
+                            } catch (\Exception $e) {
+                                // Skip this relationship field if there's an error
+                                continue;
+                            }
                             continue;
                         }
+
                         $searchField = $dataType->name.'.'.$row->field;
                         if ($first) {
                             $q->whereRaw('LOWER('.$searchField.') LIKE ?', ['%'.$searchValueLower.'%']);
