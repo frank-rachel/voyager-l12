@@ -1085,8 +1085,10 @@ class VoyagerBaseController extends Controller
             $totalRecords = $model::count();
 
             // Apply search filter (only if search has minimum characters)
+            // Use LOWER() for case-insensitive search
             if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
-                $query->where(function ($q) use ($dataType, $searchValue) {
+                $searchValueLower = mb_strtolower($searchValue);
+                $query->where(function ($q) use ($dataType, $searchValueLower) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
                         // Skip relationship fields for now (complex search)
@@ -1095,10 +1097,10 @@ class VoyagerBaseController extends Controller
                         }
                         $searchField = $dataType->name.'.'.$row->field;
                         if ($first) {
-                            $q->where($searchField, 'LIKE', '%'.$searchValue.'%');
+                            $q->whereRaw('LOWER('.$searchField.') LIKE ?', ['%'.$searchValueLower.'%']);
                             $first = false;
                         } else {
-                            $q->orWhere($searchField, 'LIKE', '%'.$searchValue.'%');
+                            $q->orWhereRaw('LOWER('.$searchField.') LIKE ?', ['%'.$searchValueLower.'%']);
                         }
                     }
                 });
@@ -1139,14 +1141,15 @@ class VoyagerBaseController extends Controller
             $totalRecords = $tableQuery->count();
 
             if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
-                $tableQuery->where(function ($q) use ($dataType, $searchValue) {
+                $searchValueLower = mb_strtolower($searchValue);
+                $tableQuery->where(function ($q) use ($dataType, $searchValueLower) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
                         if ($first) {
-                            $q->where($row->field, 'LIKE', '%'.$searchValue.'%');
+                            $q->whereRaw('LOWER('.$row->field.') LIKE ?', ['%'.$searchValueLower.'%']);
                             $first = false;
                         } else {
-                            $q->orWhere($row->field, 'LIKE', '%'.$searchValue.'%');
+                            $q->orWhereRaw('LOWER('.$row->field.') LIKE ?', ['%'.$searchValueLower.'%']);
                         }
                     }
                 });
