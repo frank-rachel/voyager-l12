@@ -1085,7 +1085,7 @@ class VoyagerBaseController extends Controller
             $totalRecords = $model::count();
 
             // Apply search filter (only if search has minimum characters)
-            // Use LOWER() for case-insensitive search
+            // Use LOWER(CAST()) for case-insensitive search that works with all column types
             if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
                 $searchValueLower = mb_strtolower($searchValue);
                 $query->where(function ($q) use ($dataType, $searchValueLower) {
@@ -1095,7 +1095,7 @@ class VoyagerBaseController extends Controller
                         if ($row->type === 'relationship' && isset($row->details->model) && isset($row->details->label)) {
                             try {
                                 $relatedModel = app($row->details->model);
-                                $relatedIds = $relatedModel::whereRaw('LOWER('.$row->details->label.') LIKE ?', ['%'.$searchValueLower.'%'])
+                                $relatedIds = $relatedModel::whereRaw('LOWER(CAST('.$row->details->label.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%'])
                                     ->pluck($row->details->key ?? 'id')
                                     ->toArray();
 
@@ -1115,12 +1115,13 @@ class VoyagerBaseController extends Controller
                             continue;
                         }
 
+                        // Cast to TEXT to handle non-text columns (integers, dates, etc.)
                         $searchField = $dataType->name.'.'.$row->field;
                         if ($first) {
-                            $q->whereRaw('LOWER('.$searchField.') LIKE ?', ['%'.$searchValueLower.'%']);
+                            $q->whereRaw('LOWER(CAST('.$searchField.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
                             $first = false;
                         } else {
-                            $q->orWhereRaw('LOWER('.$searchField.') LIKE ?', ['%'.$searchValueLower.'%']);
+                            $q->orWhereRaw('LOWER(CAST('.$searchField.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
                         }
                     }
                 });
@@ -1166,10 +1167,10 @@ class VoyagerBaseController extends Controller
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
                         if ($first) {
-                            $q->whereRaw('LOWER('.$row->field.') LIKE ?', ['%'.$searchValueLower.'%']);
+                            $q->whereRaw('LOWER(CAST('.$row->field.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
                             $first = false;
                         } else {
-                            $q->orWhereRaw('LOWER('.$row->field.') LIKE ?', ['%'.$searchValueLower.'%']);
+                            $q->orWhereRaw('LOWER(CAST('.$row->field.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
                         }
                     }
                 });
