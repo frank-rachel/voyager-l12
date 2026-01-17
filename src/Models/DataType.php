@@ -79,7 +79,34 @@ class DataType extends Model
 
     public function setServerSideAttribute($value)
     {
-        $this->attributes['server_side'] = $value ? 1 : 0;
+        // Support values: 0 = client-side, 1 = server-side pagination, 2 = ajax (DataTables server-side processing)
+        $this->attributes['server_side'] = is_numeric($value) ? (int) $value : ($value ? 1 : 0);
+    }
+
+    /**
+     * Check if AJAX DataTables server-side processing is enabled
+     * server_side = 2 means AJAX mode
+     */
+    public function isAjaxServerSide()
+    {
+        return $this->attributes['server_side'] == 2;
+    }
+
+    /**
+     * Check if traditional server-side pagination is enabled
+     * server_side = 1 means traditional server-side
+     */
+    public function isTraditionalServerSide()
+    {
+        return $this->attributes['server_side'] == 1;
+    }
+
+    /**
+     * Check if any server-side mode is enabled (pagination or AJAX)
+     */
+    public function isServerSideEnabled()
+    {
+        return $this->attributes['server_side'] >= 1;
     }
 
     public function updateDataType($requestData, $throw = false)
