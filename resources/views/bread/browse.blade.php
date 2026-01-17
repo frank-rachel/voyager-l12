@@ -332,18 +332,18 @@
                 var minSearchChars = {{ $ajaxSearchMinChars }};
                 var searchDelay = {{ $ajaxSearchDelay }};
 
-                var table = $('#dataTable').DataTable({!! json_encode(
-                    array_merge([
-                        "order" => $orderColumn,
-                        "language" => __('voyager::datatable'),
-                        "columnDefs" => [
-                            ['targets' => 'dt-not-orderable', 'searchable' => false, 'orderable' => false],
-                        ],
-                        "processing" => true,
-                        "serverSide" => true,
+                // Base configuration from Voyager config
+                var baseConfig = {!! json_encode(config('voyager.dashboard.data_tables', [])) !!};
+
+                // Merge with AJAX-specific configuration
+                var ajaxConfig = $.extend({}, baseConfig, {
+                    order: {!! json_encode($orderColumn) !!},
+                    language: {!! json_encode(__('voyager::datatable')) !!},
+                    columnDefs: [
+                        {targets: 'dt-not-orderable', searchable: false, orderable: false}
                     ],
-                    config('voyager.dashboard.data_tables', []))
-                , true) !!},
+                    processing: true,
+                    serverSide: true,
                     ajax: {
                         url: '{{ $ajaxUrl }}',
                         data: function(d) {
@@ -372,9 +372,6 @@
                         }
                     ],
                     searchDelay: searchDelay,
-                    search: {
-                        return: false
-                    },
                     initComplete: function() {
                         var api = this.api();
 
@@ -394,6 +391,8 @@
                         $('div.dataTables_filter input').attr('placeholder', '{{ __("voyager::generic.search") }} (min ' + minSearchChars + ' {{ __("voyager::generic.characters") }})');
                     }
                 });
+
+                var table = $('#dataTable').DataTable(ajaxConfig);
 
                 // Re-bind checkbox change for row selection
                 $('#dataTable').on('change', 'input[name="row_id"]', function() {
