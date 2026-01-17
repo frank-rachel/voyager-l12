@@ -1085,19 +1085,28 @@ class VoyagerBaseController extends Controller
             $totalRecords = $model::count();
 
             // Apply search filter (only if search has minimum characters)
-            // Use LOWER(CAST()) for case-insensitive search that works with all column types
+            // Use ILIKE for PostgreSQL (case-insensitive), LIKE for MySQL (already case-insensitive)
             if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
-                $searchValueLower = mb_strtolower($searchValue);
-                $query->where(function ($q) use ($dataType, $searchValueLower) {
+                $connection = $query->getConnection();
+                $driver = $connection->getDriverName();
+                $isPostgres = $driver === 'pgsql';
+
+                $query->where(function ($q) use ($dataType, $searchValue, $isPostgres) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
                         // Handle relationship fields by searching the related table
                         if ($row->type === 'relationship' && isset($row->details->model) && isset($row->details->label)) {
                             try {
                                 $relatedModel = app($row->details->model);
-                                $relatedIds = $relatedModel::whereRaw('LOWER(CAST('.$row->details->label.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%'])
-                                    ->pluck($row->details->key ?? 'id')
-                                    ->toArray();
+                                $relatedQuery = $relatedModel::query();
+
+                                if ($isPostgres) {
+                                    $relatedQuery->whereRaw('CAST('.$row->details->label.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
+                                } else {
+                                    $relatedQuery->where($row->details->label, 'LIKE', '%'.$searchValue.'%');
+                                }
+
+                                $relatedIds = $relatedQuery->pluck($row->details->key ?? 'id')->toArray();
 
                                 if (!empty($relatedIds)) {
                                     $foreignKey = $dataType->name.'.'.$row->field;
@@ -1115,13 +1124,23 @@ class VoyagerBaseController extends Controller
                             continue;
                         }
 
-                        // Cast to TEXT to handle non-text columns (integers, dates, etc.)
+                        // Use ILIKE for PostgreSQL (cast to TEXT for non-text columns)
+                        // MySQL LIKE is already case-insensitive with default collation
                         $searchField = $dataType->name.'.'.$row->field;
-                        if ($first) {
-                            $q->whereRaw('LOWER(CAST('.$searchField.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
-                            $first = false;
+                        if ($isPostgres) {
+                            if ($first) {
+                                $q->whereRaw('CAST('.$searchField.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
+                                $first = false;
+                            } else {
+                                $q->orWhereRaw('CAST('.$searchField.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
+                            }
                         } else {
-                            $q->orWhereRaw('LOWER(CAST('.$searchField.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
+                            if ($first) {
+                                $q->where($searchField, 'LIKE', '%'.$searchValue.'%');
+                                $first = false;
+                            } else {
+                                $q->orWhere($searchField, 'LIKE', '%'.$searchValue.'%');
+                            }
                         }
                     }
                 });
@@ -1162,15 +1181,26 @@ class VoyagerBaseController extends Controller
             $totalRecords = $tableQuery->count();
 
             if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
-                $searchValueLower = mb_strtolower($searchValue);
-                $tableQuery->where(function ($q) use ($dataType, $searchValueLower) {
+                $driver = DB::connection()->getDriverName();
+                $isPostgres = $driver === 'pgsql';
+
+                $tableQuery->where(function ($q) use ($dataType, $searchValue, $isPostgres) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
-                        if ($first) {
-                            $q->whereRaw('LOWER(CAST('.$row->field.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
-                            $first = false;
+                        if ($isPostgres) {
+                            if ($first) {
+                                $q->whereRaw('CAST('.$row->field.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
+                                $first = false;
+                            } else {
+                                $q->orWhereRaw('CAST('.$row->field.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
+                            }
                         } else {
-                            $q->orWhereRaw('LOWER(CAST('.$row->field.' AS TEXT)) LIKE ?', ['%'.$searchValueLower.'%']);
+                            if ($first) {
+                                $q->where($row->field, 'LIKE', '%'.$searchValue.'%');
+                                $first = false;
+                            } else {
+                                $q->orWhere($row->field, 'LIKE', '%'.$searchValue.'%');
+                            }
                         }
                     }
                 });
