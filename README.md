@@ -4,6 +4,49 @@
 
 This is a **Laravel 12 compatible fork** of the original [Voyager Admin Panel](https://github.com/thedevdojo/voyager).
 
+---
+
+## IMPORTANT: Production Fork
+
+> **WARNING: This fork is used by multiple production applications.**
+>
+> Before making ANY changes, please read the guidelines below carefully.
+
+### Projects Using This Fork
+- TPC Restaurants (restaurants.theplusclub.com)
+- *(Add other projects here as they adopt this fork)*
+
+### Development Guidelines
+
+1. **Never push directly to the `1.7` branch** - Always create a feature branch and test thoroughly
+2. **Test changes locally first** - Run `composer install` and verify in a test application
+3. **Backwards compatibility is critical** - Do not remove or rename public methods/classes
+4. **Version tags are immutable** - Once a version (e.g., `v2.0.0`) is released, never modify it
+5. **Document all changes** - Update this README for any significant modifications
+6. **Consider all dependents** - A breaking change affects ALL projects using this fork
+
+### How to Make Changes Safely
+
+```bash
+# 1. Create a feature branch
+git checkout -b feature/my-change
+
+# 2. Make your changes and test locally
+
+# 3. Push feature branch
+git push origin feature/my-change
+
+# 4. Test in ONE application first before merging
+
+# 5. Only after testing, merge to 1.7 and create a new version tag
+git checkout 1.7
+git merge feature/my-change
+git tag -a v2.0.1 -m "Description of changes"
+git push origin 1.7 --tags
+```
+
+---
+
 ## About This Fork
 
 The original Voyager package was archived and did not support Laravel 11+. This fork adds compatibility for:
