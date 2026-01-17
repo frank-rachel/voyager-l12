@@ -1268,7 +1268,7 @@ class VoyagerBaseController extends Controller
 
         $html = '';
         foreach ($actions as $action) {
-            $html .= view('voyager::bread.partials.actions', ['action' => $action, 'data' => $item])->render();
+            $html .= view('voyager::bread.partials.actions', ['action' => $action, 'data' => $item, 'dataType' => $dataType])->render();
         }
 
         return $html;
