@@ -1094,33 +1094,39 @@ class VoyagerBaseController extends Controller
                 $query->where(function ($q) use ($dataType, $searchValue, $isPostgres) {
                     $first = true;
                     foreach ($dataType->browseRows as $row) {
-                        // Handle relationship fields by searching the related table
-                        if ($row->type === 'relationship' && isset($row->details->model) && isset($row->details->label)) {
-                            try {
-                                $relatedModel = app($row->details->model);
-                                $relatedQuery = $relatedModel::query();
+                        // Skip relationship fields - they are virtual columns that don't exist in the database
+                        // For belongsTo relationships with proper config, we could search the related table,
+                        // but belongsToMany relationships have complex field names that aren't real columns
+                        if ($row->type === 'relationship') {
+                            // Only handle belongsTo relationships with proper configuration
+                            if (isset($row->details->type) && $row->details->type === 'belongsTo'
+                                && isset($row->details->model) && isset($row->details->label) && isset($row->details->column)) {
+                                try {
+                                    $relatedModel = app($row->details->model);
+                                    $relatedQuery = $relatedModel::query();
 
-                                if ($isPostgres) {
-                                    $relatedQuery->whereRaw('CAST('.$row->details->label.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
-                                } else {
-                                    $relatedQuery->where($row->details->label, 'LIKE', '%'.$searchValue.'%');
-                                }
-
-                                $relatedIds = $relatedQuery->pluck($row->details->key ?? 'id')->toArray();
-
-                                if (!empty($relatedIds)) {
-                                    $foreignKey = $dataType->name.'.'.$row->field;
-                                    if ($first) {
-                                        $q->whereIn($foreignKey, $relatedIds);
-                                        $first = false;
+                                    if ($isPostgres) {
+                                        $relatedQuery->whereRaw('CAST('.$row->details->label.' AS TEXT) ILIKE ?', ['%'.$searchValue.'%']);
                                     } else {
-                                        $q->orWhereIn($foreignKey, $relatedIds);
+                                        $relatedQuery->where($row->details->label, 'LIKE', '%'.$searchValue.'%');
                                     }
+
+                                    $relatedIds = $relatedQuery->pluck($row->details->key ?? 'id')->toArray();
+
+                                    if (!empty($relatedIds)) {
+                                        $foreignKey = $dataType->name.'.'.$row->details->column;
+                                        if ($first) {
+                                            $q->whereIn($foreignKey, $relatedIds);
+                                            $first = false;
+                                        } else {
+                                            $q->orWhereIn($foreignKey, $relatedIds);
+                                        }
+                                    }
+                                } catch (\Exception $e) {
+                                    // Skip this relationship field if there's an error
                                 }
-                            } catch (\Exception $e) {
-                                // Skip this relationship field if there's an error
-                                continue;
                             }
+                            // Skip all other relationship types (belongsToMany, hasMany, etc.)
                             continue;
                         }
 
