@@ -105,6 +105,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @if(!$isAjaxServerSide)
                                     @foreach($dataTypeContent as $data)
                                     <tr>
                                         @if($showCheckboxColumn)
@@ -261,6 +262,7 @@
                                         </td>
                                     </tr>
                                     @endforeach
+                                    @endif
                                 </tbody>
                             </table>
                         </div>
@@ -312,19 +314,97 @@
 @stop
 
 @section('css')
-@if(!$dataType->server_side && config('dashboard.data_tables.responsive'))
+@if((!$dataType->server_side || $isAjaxServerSide) && config('dashboard.data_tables.responsive'))
     <link rel="stylesheet" href="{{ voyager_asset('lib/css/responsive.dataTables.min.css') }}">
 @endif
 @stop
 
 @section('javascript')
     <!-- DataTables -->
-    @if(!$dataType->server_side && config('dashboard.data_tables.responsive'))
+    @if((!$dataType->server_side || $isAjaxServerSide) && config('dashboard.data_tables.responsive'))
         <script src="{{ voyager_asset('lib/js/dataTables.responsive.min.js') }}"></script>
     @endif
     <script>
         $(document).ready(function () {
-            @if (!$dataType->server_side)
+            @if ($isAjaxServerSide)
+                // AJAX server-side DataTables mode
+                var searchTimer = null;
+                var minSearchChars = {{ $ajaxSearchMinChars }};
+                var searchDelay = {{ $ajaxSearchDelay }};
+
+                var table = $('#dataTable').DataTable({!! json_encode(
+                    array_merge([
+                        "order" => $orderColumn,
+                        "language" => __('voyager::datatable'),
+                        "columnDefs" => [
+                            ['targets' => 'dt-not-orderable', 'searchable' => false, 'orderable' => false],
+                        ],
+                        "processing" => true,
+                        "serverSide" => true,
+                    ],
+                    config('voyager.dashboard.data_tables', []))
+                , true) !!},
+                    ajax: {
+                        url: '{{ $ajaxUrl }}',
+                        data: function(d) {
+                            d.showSoftDeleted = $('#show_soft_deletes').is(':checked') ? 1 : 0;
+                        }
+                    },
+                    columns: [
+                        @if($showCheckboxColumn)
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: function(data, type, row) {
+                                return '<input type="checkbox" name="row_id" id="checkbox_' + row.DT_RowId + '" value="' + row.DT_RowId + '">';
+                            }
+                        },
+                        @endif
+                        @foreach($dataType->browseRows as $row)
+                        { data: '{{ $row->field }}', name: '{{ $row->field }}' },
+                        @endforeach
+                        {
+                            data: 'actions',
+                            orderable: false,
+                            searchable: false,
+                            className: 'no-sort no-click bread-actions'
+                        }
+                    ],
+                    searchDelay: searchDelay,
+                    search: {
+                        return: false
+                    },
+                    initComplete: function() {
+                        var api = this.api();
+
+                        // Custom search handling with minimum characters
+                        $('div.dataTables_filter input').unbind().bind('input', function(e) {
+                            var searchVal = this.value;
+                            clearTimeout(searchTimer);
+
+                            if (searchVal.length >= minSearchChars || searchVal.length === 0) {
+                                searchTimer = setTimeout(function() {
+                                    api.search(searchVal).draw();
+                                }, searchDelay);
+                            }
+                        });
+
+                        // Add placeholder to show minimum chars requirement
+                        $('div.dataTables_filter input').attr('placeholder', '{{ __("voyager::generic.search") }} (min ' + minSearchChars + ' {{ __("voyager::generic.characters") }})');
+                    }
+                });
+
+                // Re-bind checkbox change for row selection
+                $('#dataTable').on('change', 'input[name="row_id"]', function() {
+                    var ids = [];
+                    $('input[name="row_id"]:checked').each(function() {
+                        ids.push($(this).val());
+                    });
+                    $('.selected_ids').val(ids);
+                });
+            @elseif (!$dataType->server_side)
+                // Client-side DataTables mode
                 var table = $('#dataTable').DataTable({!! json_encode(
                     array_merge([
                         "order" => $orderColumn,
@@ -336,6 +416,7 @@
                     config('voyager.dashboard.data_tables', []))
                 , true) !!});
             @else
+                // Traditional server-side pagination mode
                 $('#search-input select').select2({
                     minimumResultsForSearch: Infinity
                 });

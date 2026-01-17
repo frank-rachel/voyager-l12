@@ -137,8 +137,16 @@ class VoyagerBaseController extends Controller
         // Eagerload Relations
         $this->eagerLoadRelations($dataTypeContent, $dataType, 'browse', $isModelTranslatable);
 
-        // Check if server side pagination is enabled
-        $isServerSide = isset($dataType->server_side) && $dataType->server_side;
+        // Check if server side pagination is enabled (traditional mode = 1)
+        $isServerSide = isset($dataType->server_side) && $dataType->server_side == 1;
+
+        // Check if AJAX server-side processing is enabled (mode = 2)
+        $isAjaxServerSide = isset($dataType->server_side) && $dataType->server_side == 2;
+
+        // AJAX DataTables configuration
+        $ajaxUrl = $isAjaxServerSide ? route('voyager.'.$dataType->slug.'.ajax') : null;
+        $ajaxSearchMinChars = config('voyager.ajax_search_min_chars', 2);
+        $ajaxSearchDelay = config('voyager.ajax_search_delay', 400);
 
         // Check if a default search key is set
         $defaultSearchKey = $dataType->default_search_key ?? null;
@@ -195,6 +203,10 @@ class VoyagerBaseController extends Controller
             'sortOrder',
             'searchNames',
             'isServerSide',
+            'isAjaxServerSide',
+            'ajaxUrl',
+            'ajaxSearchMinChars',
+            'ajaxSearchDelay',
             'defaultSearchKey',
             'usesSoftDeletes',
             'showSoftDeleted',
@@ -1018,5 +1030,247 @@ class VoyagerBaseController extends Controller
     protected function relationIsUsingAccessorAsLabel($details)
     {
         return in_array($details->label, app($details->model)->additional_attributes ?? []);
+    }
+
+    /**
+     * AJAX endpoint for DataTables server-side processing
+     * Returns JSON data for DataTables AJAX mode (server_side = 2)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ajax(Request $request)
+    {
+        $slug = $this->getSlug($request);
+        $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
+
+        // Check permission
+        $this->authorize('browse', app($dataType->model_name));
+
+        // DataTables parameters
+        $draw = $request->get('draw', 1);
+        $start = $request->get('start', 0);
+        $length = $request->get('length', 10);
+        $searchValue = $request->get('search')['value'] ?? '';
+        $orderColumn = $request->get('order')[0]['column'] ?? null;
+        $orderDir = $request->get('order')[0]['dir'] ?? 'asc';
+
+        // Get columns for ordering
+        $columns = $request->get('columns', []);
+
+        // Minimum characters for search (configurable, default 2)
+        $minSearchChars = config('voyager.ajax_search_min_chars', 2);
+
+        // Get model and build query
+        if (strlen($dataType->model_name) != 0) {
+            $model = app($dataType->model_name);
+            $query = $model::select($dataType->name.'.*');
+
+            // Apply scope if defined
+            if ($dataType->scope && $dataType->scope != '' && method_exists($model, 'scope'.ucfirst($dataType->scope))) {
+                $query->{$dataType->scope}();
+            }
+
+            // Handle soft deletes
+            if ($model && in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($model)) && Auth::user()->can('delete', app($dataType->model_name))) {
+                if ($request->get('showSoftDeleted')) {
+                    $query = $query->withTrashed();
+                }
+            }
+
+            // If a column has a relationship associated with it, we do not want to show that field
+            $this->removeRelationshipField($dataType, 'browse');
+
+            // Get total records before filtering
+            $totalRecords = $model::count();
+
+            // Apply search filter (only if search has minimum characters)
+            if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
+                $query->where(function ($q) use ($dataType, $searchValue) {
+                    $first = true;
+                    foreach ($dataType->browseRows as $row) {
+                        // Skip relationship fields for now (complex search)
+                        if ($row->type === 'relationship') {
+                            continue;
+                        }
+                        $searchField = $dataType->name.'.'.$row->field;
+                        if ($first) {
+                            $q->where($searchField, 'LIKE', '%'.$searchValue.'%');
+                            $first = false;
+                        } else {
+                            $q->orWhere($searchField, 'LIKE', '%'.$searchValue.'%');
+                        }
+                    }
+                });
+            }
+
+            // Get filtered count
+            $filteredRecords = $query->count();
+
+            // Apply ordering
+            if ($orderColumn !== null && isset($columns[$orderColumn])) {
+                $orderByField = $columns[$orderColumn]['data'] ?? null;
+                if ($orderByField && in_array($orderByField, $dataType->fields())) {
+                    $query->orderBy($dataType->name.'.'.$orderByField, $orderDir);
+                }
+            } elseif ($dataType->order_column) {
+                $query->orderBy($dataType->order_column, $dataType->order_direction ?? 'desc');
+            } elseif ($model->timestamps) {
+                $query->latest($model::CREATED_AT);
+            } else {
+                $query->orderBy($model->getKeyName(), 'DESC');
+            }
+
+            // Apply pagination
+            $dataTypeContent = $query->skip($start)->take($length)->get();
+
+            // Replace relationships' keys for labels
+            $dataTypeContent = $this->resolveRelations($dataTypeContent, $dataType);
+
+            // Check if BREAD is Translatable
+            $isModelTranslatable = is_bread_translatable($model);
+
+            // Eagerload Relations
+            $this->eagerLoadRelations($dataTypeContent, $dataType, 'browse', $isModelTranslatable);
+
+        } else {
+            // If Model doesn't exist, get data from table name
+            $tableQuery = DB::table($dataType->name);
+            $totalRecords = $tableQuery->count();
+
+            if (!empty($searchValue) && strlen($searchValue) >= $minSearchChars) {
+                $tableQuery->where(function ($q) use ($dataType, $searchValue) {
+                    $first = true;
+                    foreach ($dataType->browseRows as $row) {
+                        if ($first) {
+                            $q->where($row->field, 'LIKE', '%'.$searchValue.'%');
+                            $first = false;
+                        } else {
+                            $q->orWhere($row->field, 'LIKE', '%'.$searchValue.'%');
+                        }
+                    }
+                });
+            }
+
+            $filteredRecords = $tableQuery->count();
+            $dataTypeContent = $tableQuery->skip($start)->take($length)->get();
+            $model = false;
+        }
+
+        // Build data array for DataTables
+        $data = [];
+        foreach ($dataTypeContent as $item) {
+            $row = [];
+            $row['DT_RowId'] = $item->getKey();
+
+            foreach ($dataType->browseRows as $browseRow) {
+                $field = $browseRow->field;
+                $value = $item->{$field};
+
+                // Handle browse accessor
+                if ($item->{$field.'_browse'}) {
+                    $value = $item->{$field.'_browse'};
+                }
+
+                // Format value based on type
+                $row[$field] = $this->formatFieldValueForAjax($browseRow, $value, $item, $dataType);
+            }
+
+            // Add actions column
+            $row['actions'] = $this->renderActionsForAjax($dataType, $item);
+
+            $data[] = $row;
+        }
+
+        return response()->json([
+            'draw' => intval($draw),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Format a field value for AJAX DataTables response
+     *
+     * @param mixed $row
+     * @param mixed $value
+     * @param mixed $item
+     * @param mixed $dataType
+     * @return string
+     */
+    protected function formatFieldValueForAjax($row, $value, $item, $dataType)
+    {
+        switch ($row->type) {
+            case 'image':
+                if ($value) {
+                    $imageUrl = filter_var($value, FILTER_VALIDATE_URL) ? $value : Voyager::image($value);
+                    return '<img src="'.$imageUrl.'" style="width:100px">';
+                }
+                return '';
+
+            case 'date':
+            case 'timestamp':
+                if ($value && property_exists($row->details ?? new \stdClass(), 'format')) {
+                    return \Carbon\Carbon::parse($value)->formatLocalized($row->details->format);
+                }
+                return $value ?? '';
+
+            case 'checkbox':
+                if (property_exists($row->details ?? new \stdClass(), 'on') && property_exists($row->details, 'off')) {
+                    return $value
+                        ? '<span class="label label-info">'.$row->details->on.'</span>'
+                        : '<span class="label label-primary">'.$row->details->off.'</span>';
+                }
+                return $value ?? '';
+
+            case 'color':
+                return '<span class="badge badge-lg" style="background-color: '.$value.'">'.$value.'</span>';
+
+            case 'text':
+            case 'text_area':
+            case 'rich_text_box':
+                $plainValue = strip_tags($value ?? '');
+                return mb_strlen($plainValue) > 200 ? mb_substr($plainValue, 0, 200).' ...' : $plainValue;
+
+            case 'select_dropdown':
+            case 'radio_btn':
+                if (property_exists($row->details ?? new \stdClass(), 'options')) {
+                    return $row->details->options->{$value} ?? '';
+                }
+                return $value ?? '';
+
+            case 'relationship':
+                // For relationships, the value should already be resolved
+                return $value ?? '';
+
+            default:
+                return $value ?? '';
+        }
+    }
+
+    /**
+     * Render actions HTML for AJAX DataTables response
+     *
+     * @param mixed $dataType
+     * @param mixed $item
+     * @return string
+     */
+    protected function renderActionsForAjax($dataType, $item)
+    {
+        $actions = [];
+        foreach (Voyager::actions() as $actionClass) {
+            $action = new $actionClass($dataType, $item);
+            if ($action->shouldActionDisplayOnDataType() && !method_exists($action, 'massAction')) {
+                $actions[] = $action;
+            }
+        }
+
+        $html = '';
+        foreach ($actions as $action) {
+            $html .= view('voyager::bread.partials.actions', ['action' => $action, 'data' => $item])->render();
+        }
+
+        return $html;
     }
 }

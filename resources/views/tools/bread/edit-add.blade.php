@@ -177,14 +177,18 @@
                                            @if($checked) checked @endif >
                                 </div>
                                 <div class="col-md-3 form-group">
-                                    <label for="server_side">{{ __('voyager::bread.server_pagination') }}</label><br>
-                                    <?php $checked = (isset($dataType->server_side) && $dataType->server_side == 1) || (isset($server_side) && $server_side); ?>
-                                    <input type="checkbox"
-                                           name="server_side"
-                                           class="toggleswitch"
-                                           data-on="{{ __('voyager::generic.yes') }}"
-                                           data-off="{{ __('voyager::generic.no') }}"
-                                           @if($checked) checked @endif >
+                                    <label for="server_side">{{ __('voyager::bread.server_pagination') }}</label>
+                                    <select name="server_side" class="select2 form-control">
+                                        <option value="0" @if(!isset($dataType->server_side) || $dataType->server_side == 0) selected @endif>
+                                            {{ __('voyager::bread.client_side') }}
+                                        </option>
+                                        <option value="1" @if(isset($dataType->server_side) && $dataType->server_side == 1) selected @endif>
+                                            {{ __('voyager::bread.server_side_pagination') }}
+                                        </option>
+                                        <option value="2" @if(isset($dataType->server_side) && $dataType->server_side == 2) selected @endif>
+                                            {{ __('voyager::bread.ajax_datatables') }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="row clearfix">

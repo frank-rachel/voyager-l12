@@ -125,6 +125,11 @@ return [
     */
 
     'dashboard' => [
+        // DataTables configuration
+        'data_tables' => [
+            // You can add custom DataTables options here
+        ],
+
         // Add custom list items to navbar's dropdown
         'navbar_items' => [
             'voyager::generic.profile' => [
@@ -255,4 +260,20 @@ return [
            ],
        ]*/
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AJAX DataTables Configuration
+    |--------------------------------------------------------------------------
+    |
+    | When using server_side = 2 (AJAX mode) for a BREAD, these settings
+    | control the search behavior.
+    |
+    */
+
+    // Minimum number of characters required before AJAX search is triggered
+    'ajax_search_min_chars' => 2,
+
+    // Delay in milliseconds before search request is sent (debounce)
+    'ajax_search_delay' => 400,
 ];
