@@ -1301,7 +1301,35 @@ class VoyagerBaseController extends Controller
                 return $value ?? '';
 
             case 'relationship':
-                // For relationships, the value should already be resolved
+                $options = $row->details;
+                if (isset($options->type) && isset($options->model) && class_exists($options->model)) {
+                    if ($options->type == 'belongsToMany' && isset($options->pivot_table)) {
+                        $labels = $item->belongsToMany(
+                            $options->model,
+                            $options->pivot_table,
+                            $options->foreign_pivot_key ?? null,
+                            $options->related_pivot_key ?? null,
+                            $options->parent_key ?? null,
+                            $options->key ?? null
+                        )->get()->pluck($options->label)->all();
+
+                        if (empty($labels)) {
+                            return '';
+                        }
+                        return implode(' ', array_map(function ($l) {
+                            return '<span class="label label-info" style="display:inline-block;margin:1px;">'.e($l).'</span>';
+                        }, $labels));
+                    } elseif (in_array($options->type, ['belongsTo', 'hasOne']) && isset($options->key) && isset($options->label)) {
+                        $related = app($options->model)::where($options->key, $item->{$options->column ?? $row->field})->first();
+                        return $related ? e($related->{$options->label}) : '';
+                    } elseif ($options->type == 'hasMany' && isset($options->column) && isset($options->label)) {
+                        $labels = app($options->model)::where($options->column, $item->{$options->key ?? $item->getKeyName()})->pluck($options->label)->all();
+                        if (empty($labels)) {
+                            return '';
+                        }
+                        return implode(', ', array_map('e', $labels));
+                    }
+                }
                 return $value ?? '';
 
             default:
