@@ -45,4 +45,17 @@ return [
     'updated_order'          => 'Order updated successfully',
     'url_slug'               => 'URL Slug (must be unique)',
     'url_slug_ph'            => 'URL slug (ex. posts)',
+
+    'save_and_continue'       => 'Opslaan & verder editeren',
+    'save_and_create'         => 'Opslaan & Nieuwe maken',
+    'tab_main_title'          => 'Main',
+    'inline_edit'             => 'Bewerken',
+    'inline_save'             => 'Opslaan',
+    'inline_cancel'           => 'Annuleren',
+    'no_data_can_be_displayed' => 'Geen gegevens beschikbaar',
+    'dialog_inline_title'     => 'Inline bewerken',
+    'dialog_button_save'      => 'Opslaan',
+    'dialog_button_remove'    => 'Verwijderen',
+    'dialog_clone_message'    => 'U gaat het geselecteerde record klonen.',
+    'dialog_clone_yes_button' => 'Ja, kloon het!',
 ];

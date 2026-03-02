@@ -54,4 +54,17 @@ return [
     'updated_order'          => 'Order updated successfully',
     'url_slug'               => 'URL Slug (must be unique)',
     'url_slug_ph'            => 'URL slug (ex. posts)',
+
+    'save_and_continue'       => 'Save & Continue Editing',
+    'save_and_create'         => 'Save & Create New',
+    'tab_main_title'          => 'Main',
+    'inline_edit'             => 'Edit',
+    'inline_save'             => 'Save',
+    'inline_cancel'           => 'Cancel',
+    'no_data_can_be_displayed' => 'No data can be displayed',
+    'dialog_inline_title'     => 'Inline edit',
+    'dialog_button_save'      => 'Save',
+    'dialog_button_remove'    => 'Remove',
+    'dialog_clone_message'    => 'You are going to clone selected record.',
+    'dialog_clone_yes_button' => 'Yes, clone it!',
 ];
