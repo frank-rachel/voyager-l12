@@ -379,7 +379,10 @@ class VoyagerBaseController extends Controller
 
         event(new BreadDataUpdated($dataType, $data));
 
-        if (auth()->user()->can('browse', app($dataType->model_name))) {
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && filter_var($redirectTo, FILTER_VALIDATE_URL)) {
+            $redirect = redirect($redirectTo);
+        } elseif (auth()->user()->can('browse', app($dataType->model_name))) {
             $redirect = redirect()->route("voyager.{$dataType->slug}.index");
         } else {
             $redirect = redirect()->back();
@@ -462,7 +465,10 @@ class VoyagerBaseController extends Controller
         event(new BreadDataAdded($dataType, $data));
 
         if (!$request->has('_tagging')) {
-            if (auth()->user()->can('browse', $data)) {
+            $redirectTo = $request->input('redirect_to');
+            if ($redirectTo && filter_var($redirectTo, FILTER_VALIDATE_URL)) {
+                $redirect = redirect($redirectTo);
+            } elseif (auth()->user()->can('browse', $data)) {
                 $redirect = redirect()->route("voyager.{$dataType->slug}.index");
             } else {
                 $redirect = redirect()->back();
