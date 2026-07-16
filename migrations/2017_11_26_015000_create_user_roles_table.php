@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CreateUserRolesTable extends Migration
@@ -13,9 +14,15 @@ class CreateUserRolesTable extends Migration
      */
     public function up()
     {
-        Schema::create('user_roles', function (Blueprint $table) {
-            $type = DB::connection()->getDoctrineColumn(DB::getTablePrefix().'users', 'id')->getType()->getName();
-            if ($type == 'bigint') {
+        // Laravel 11 removed its doctrine/dbal integration, taking
+        // Connection::getDoctrineColumn() with it. Schema::getColumnType() is the
+        // native replacement, but it reports the driver's own type name — Postgres
+        // says "int8" where MySQL says "bigint" — so match on all the spellings.
+        $type = strtolower(Schema::getColumnType(DB::getTablePrefix().'users', 'id'));
+        $isBigInt = in_array($type, ['bigint', 'int8', 'bigserial'], true);
+
+        Schema::create('user_roles', function (Blueprint $table) use ($isBigInt) {
+            if ($isBigInt) {
                 $table->bigInteger('user_id')->unsigned()->index();
             } else {
                 $table->integer('user_id')->unsigned()->index();
