@@ -55,4 +55,19 @@ abstract class AbstractAction implements ActionInterface
     {
         return true;
     }
+
+    /**
+     * Get parent context query params from the current request.
+     */
+    protected function getParentQueryParams(): array
+    {
+        $parentKeys = ['appparent', 'versionparent', 'questionparent', 'wfid', 'wfvid', 'olp', 'parent', 'closed', 'masterreport'];
+        $params = [];
+        foreach ($parentKeys as $key) {
+            if (isset($_REQUEST[$key])) {
+                $params[$key] = $_REQUEST[$key];
+            }
+        }
+        return $params;
+    }
 }
