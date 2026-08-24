@@ -1,71 +1,71 @@
 {
-  "name": "frank-rachel/voyager-l12",
-  "description": "Laravel 12 compatible fork of Voyager Admin Panel",
-  "keywords": [
-    "laravel",
-    "admin",
-    "panel"
-  ],
-  "license": "MIT",
-  "homepage": "https://github.com/frank-rachel/voyager-l12",
-  "support": {
-    "issues": "https://github.com/frank-rachel/voyager-l12/issues",
-    "source": "https://github.com/frank-rachel/voyager-l12"
-  },
-  "authors": [
-    {
-      "name": "Tony Lea",
-      "email": "tony.lea@thecontrolgroup.com"
+    "name": "frank-rachel/voyager-l12",
+    "description": "Laravel 12 compatible fork of Voyager Admin Panel",
+    "keywords": [
+        "laravel",
+        "admin",
+        "panel"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/frank-rachel/voyager-l12",
+    "support": {
+        "issues": "https://github.com/frank-rachel/voyager-l12/issues",
+        "source": "https://github.com/frank-rachel/voyager-l12"
     },
-    {
-      "name": "Frank Rachel",
-      "email": "info@rachel.be"
+    "authors": [
+        {
+            "name": "Tony Lea",
+            "email": "tony.lea@thecontrolgroup.com"
+        },
+        {
+            "name": "Frank Rachel",
+            "email": "info@rachel.be"
+        }
+    ],
+    "require": {
+        "php": "^8.2|^8.3|^8.4|^8.5",
+        "illuminate/support": "~10.0|~11.0|~12.0|~13.0",
+        "doctrine/dbal": "^3.5|^4.0",
+        "laravel/ui": "^4.0",
+        "arrilot/laravel-widgets": "^3.7",
+        "league/flysystem": "~3.0",
+        "ext-json": "*"
+    },
+    "suggest": {
+        "intervention/image": "Required for image manipulation features (^2.7 or ^3.0)"
+    },
+    "require-dev": {
+        "phpunit/phpcov": ">=9.0",
+        "phpunit/phpunit": ">=10.0",
+        "laravel/framework": "~10.0|~11.0|~12.0",
+        "orchestra/testbench": ">=8.0",
+        "laravel/browser-kit-testing": ">=7.0.0",
+        "orchestra/testbench-browser-kit": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TCG\\Voyager\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TCG\\Voyager\\Tests\\": "tests/",
+            "TCG\\Voyager\\Tests\\Database\\Factories\\": "tests/database/factories/",
+            "Database\\Seeders\\": "vendor/orchestra/testbench-core/laravel/database/seeders"
+        }
+    },
+    "minimum-stability": "stable",
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TCG\\Voyager\\VoyagerServiceProvider",
+                "TCG\\Voyager\\Providers\\VoyagerDummyServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php vendor/bin/testbench package:discover --ansi"
+        ]
     }
-  ],
-  "require": {
-    "php": "^8.2|^8.3|^8.4",
-    "illuminate/support": "~10.0|~11.0|~12.0",
-    "doctrine/dbal": "^3.5|^4.0",
-    "laravel/ui": "^4.0",
-    "arrilot/laravel-widgets": "^3.7",
-    "league/flysystem": "~3.0",
-    "ext-json": "*"
-  },
-  "suggest": {
-    "intervention/image": "Required for image manipulation features (^2.7 or ^3.0)"
-  },
-  "require-dev": {
-    "phpunit/phpcov": ">=9.0",
-    "phpunit/phpunit": ">=10.0",
-    "laravel/framework": "~10.0|~11.0|~12.0",
-    "orchestra/testbench": ">=8.0",
-    "laravel/browser-kit-testing": ">=7.0.0",
-    "orchestra/testbench-browser-kit": ">=8.0"
-  },
-  "autoload": {
-    "psr-4": {
-      "TCG\\Voyager\\": "src/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "TCG\\Voyager\\Tests\\": "tests/",
-      "TCG\\Voyager\\Tests\\Database\\Factories\\": "tests/database/factories/",
-      "Database\\Seeders\\": "vendor/orchestra/testbench-core/laravel/database/seeders"
-    }
-  },
-  "minimum-stability": "stable",
-  "extra": {
-    "laravel": {
-      "providers": [
-        "TCG\\Voyager\\VoyagerServiceProvider",
-        "TCG\\Voyager\\Providers\\VoyagerDummyServiceProvider"
-      ]
-    }
-  },
-  "scripts": {
-    "post-autoload-dump": [
-      "@php vendor/bin/testbench package:discover --ansi"
-    ]
-  }
 }
