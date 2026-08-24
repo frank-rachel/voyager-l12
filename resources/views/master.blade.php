@@ -64,10 +64,12 @@
 </div>
 
 <?php
-if (\Illuminate\Support\Str::startsWith(Auth::user()->avatar, 'http://') || \Illuminate\Support\Str::startsWith(Auth::user()->avatar, 'https://')) {
-    $user_avatar = Auth::user()->avatar;
+// null-safe: on PHP 8 an unauthenticated request made Auth::user()->avatar fatal
+$__voyager_avatar = Auth::user()?->avatar ?: config('voyager.user.default_avatar', 'users/default.png');
+if (\Illuminate\Support\Str::startsWith($__voyager_avatar, 'http://') || \Illuminate\Support\Str::startsWith($__voyager_avatar, 'https://')) {
+    $user_avatar = $__voyager_avatar;
 } else {
-    $user_avatar = Voyager::image(Auth::user()->avatar);
+    $user_avatar = Voyager::image($__voyager_avatar);
 }
 ?>
 
